@@ -1,0 +1,393 @@
+{
+  "name": "Transport Adapté - Workflow Automatisation Complète",
+  "description": "Workflow Make.com pour gérer automatiquement les factures, générer des insights et envoyer des notifications WhatsApp",
+  "version": "1.0.0",
+  "scenarios": [
+    {
+      "name": "Scenario 1: Scan et Classification Automatique de Factures",
+      "description": "Reçoit une facture par email, la scanne, la classifie avec Claude AI, et l'enregistre",
+      "trigger": {
+        "type": "email_webhook",
+        "description": "Email avec pièce jointe reçu sur factures@votredomaine.com",
+        "filters": {
+          "subject_contains": ["facture", "reçu", "invoice", "receipt"],
+          "has_attachment": true
+        }
+      },
+      "modules": [
+        {
+          "id": 1,
+          "type": "email_parser",
+          "name": "Parser Email",
+          "config": {
+            "extract_from": "Email reçu",
+            "extract": [
+              "sender_email",
+              "subject",
+              "body",
+              "attachments"
+            ]
+          }
+        },
+        {
+          "id": 2,
+          "type": "iterator",
+          "name": "Parcourir Pièces Jointes",
+          "config": {
+            "array": "{{1.attachments}}"
+          }
+        },
+        {
+          "id": 3,
+          "type": "filter",
+          "name": "Filtrer Images Seulement",
+          "config": {
+            "condition": "{{2.type}} contains image OR {{2.type}} contains pdf"
+          }
+        },
+        {
+          "id": 4,
+          "type": "http_request",
+          "name": "Appeler API Scan Receipt",
+          "config": {
+            "url": "https://votre-app.vercel.app/api/expenses/scan",
+            "method": "POST",
+            "headers": {
+              "Content-Type": "multipart/form-data"
+            },
+            "body": {
+              "receipt": "{{2.data}}",
+              "user_id": "{{getUserIdFromEmail(1.sender_email)}}"
+            }
+          }
+        },
+        {
+          "id": 5,
+          "type": "router",
+          "name": "Router selon résultat",
+          "routes": [
+            {
+              "name": "Succès",
+              "filter": "{{4.success}} = true"
+            },
+            {
+              "name": "Erreur",
+              "filter": "{{4.success}} = false"
+            }
+          ]
+        },
+        {
+          "id": 6,
+          "type": "twilio_whatsapp",
+          "name": "Envoyer Confirmation WhatsApp",
+          "route": "Succès",
+          "config": {
+            "to": "{{getUserPhone(1.sender_email)}}",
+            "message": "✅ Facture traitée!\n\n📊 Catégorie: {{4.classification.category}}\n💰 Montant: {{4.expense.amount}}$\n🏪 Vendeur: {{4.expense.vendor}}\n\nAjoutée automatiquement à ton tableau de bord."
+          }
+        },
+        {
+          "id": 7,
+          "type": "twilio_whatsapp",
+          "name": "Envoyer Erreur WhatsApp",
+          "route": "Erreur",
+          "config": {
+            "to": "{{getUserPhone(1.sender_email)}}",
+            "message": "❌ Impossible de traiter la facture.\n\nErreur: {{4.error}}\n\nMerci de réessayer ou de l'ajouter manuellement."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Scenario 2: Génération Automatique d'Insights Mensuels",
+      "description": "Chaque 1er du mois, génère automatiquement les insights pour tous les utilisateurs",
+      "trigger": {
+        "type": "scheduled",
+        "description": "Cron: 0 9 1 * * (1er du mois à 9h)",
+        "schedule": "0 9 1 * *"
+      },
+      "modules": [
+        {
+          "id": 1,
+          "type": "supabase_query",
+          "name": "Récupérer tous les utilisateurs actifs",
+          "config": {
+            "table": "users",
+            "filter": {
+              "subscription_tier": ["pro", "premium"]
+            },
+            "select": ["id", "email", "name", "phone"]
+          }
+        },
+        {
+          "id": 2,
+          "type": "iterator",
+          "name": "Pour chaque utilisateur",
+          "config": {
+            "array": "{{1.data}}"
+          }
+        },
+        {
+          "id": 3,
+          "type": "http_request",
+          "name": "Générer Insights Mensuels",
+          "config": {
+            "url": "https://votre-app.vercel.app/api/insights/monthly",
+            "method": "GET",
+            "query": {
+              "user_id": "{{2.id}}"
+            }
+          }
+        },
+        {
+          "id": 4,
+          "type": "filter",
+          "name": "Si Insights Générés",
+          "config": {
+            "condition": "{{3.success}} = true"
+          }
+        },
+        {
+          "id": 5,
+          "type": "tools_set_variables",
+          "name": "Formater Message WhatsApp",
+          "config": {
+            "variables": {
+              "message": "📊 *Rapport Mensuel - {{3.period.month}}*\n\n💰 Revenus: {{formatCurrency(3.summary.revenue)}}\n📉 Dépenses: {{formatCurrency(3.summary.expenses)}}\n✅ Profit: {{formatCurrency(3.summary.profit)}}\n📈 Marge: {{round(3.summary.profit_margin, 1)}}%\n\n🔍 *Top Insights:*\n{{formatInsights(3.ai_insights.insights)}}\n\n💡 *Recommandations:*\n{{formatRecommendations(3.ai_insights.recommendations)}}\n\nConsulte ton dashboard pour plus de détails!"
+            }
+          }
+        },
+        {
+          "id": 6,
+          "type": "twilio_whatsapp",
+          "name": "Envoyer Rapport WhatsApp",
+          "config": {
+            "to": "{{2.phone}}",
+            "message": "{{5.message}}"
+          }
+        },
+        {
+          "id": 7,
+          "type": "email",
+          "name": "Envoyer Rapport Email (backup)",
+          "config": {
+            "to": "{{2.email}}",
+            "subject": "Rapport Mensuel - {{3.period.month}}",
+            "body_html": "{{generateEmailReport(3)}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Scenario 3: Alertes Anomalies en Temps Réel",
+      "description": "Quand une dépense anormale est détectée, envoie une alerte immédiate",
+      "trigger": {
+        "type": "webhook",
+        "description": "Webhook appelé par l'API quand anomalie détectée",
+        "url": "https://hook.make.com/xxx"
+      },
+      "modules": [
+        {
+          "id": 1,
+          "type": "webhook_receive",
+          "name": "Recevoir Anomalie",
+          "config": {
+            "data_structure": {
+              "user_id": "string",
+              "expense": "object",
+              "anomaly": "object"
+            }
+          }
+        },
+        {
+          "id": 2,
+          "type": "filter",
+          "name": "Seulement si Critique ou Warning",
+          "config": {
+            "condition": "{{1.anomaly.severity}} in [critical, warning]"
+          }
+        },
+        {
+          "id": 3,
+          "type": "supabase_query",
+          "name": "Récupérer Info Utilisateur",
+          "config": {
+            "table": "users",
+            "filter": {
+              "id": "{{1.user_id}}"
+            },
+            "select": ["name", "phone"]
+          }
+        },
+        {
+          "id": 4,
+          "type": "twilio_whatsapp",
+          "name": "Alerte WhatsApp",
+          "config": {
+            "to": "{{3.phone}}",
+            "message": "⚠️ *Alerte Dépense Inhabituelle*\n\n{{1.anomaly.reason}}\n\n📊 Détails:\n• Catégorie: {{1.expense.category}}\n• Montant: {{formatCurrency(1.expense.amount)}}\n• Vendeur: {{1.expense.vendor}}\n\n{{1.anomaly.comparison}}\n\n💡 {{1.anomaly.suggested_action}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Scenario 4: Rappels Entretien Véhicule",
+      "description": "Rappelle les entretiens basés sur kilométrage ou date",
+      "trigger": {
+        "type": "scheduled",
+        "description": "Tous les lundis à 10h",
+        "schedule": "0 10 * * 1"
+      },
+      "modules": [
+        {
+          "id": 1,
+          "type": "supabase_query",
+          "name": "Véhicules nécessitant entretien",
+          "config": {
+            "table": "vehicles",
+            "join": "users",
+            "filter": {
+              "or": [
+                {
+                  "next_maintenance_mileage": "< current_mileage + 500"
+                },
+                {
+                  "last_maintenance_date": "< NOW() - INTERVAL '3 months'"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "id": 2,
+          "type": "iterator",
+          "name": "Pour chaque véhicule",
+          "config": {
+            "array": "{{1.data}}"
+          }
+        },
+        {
+          "id": 3,
+          "type": "twilio_whatsapp",
+          "name": "Rappel Entretien",
+          "config": {
+            "to": "{{2.user.phone}}",
+            "message": "🔧 *Rappel Entretien Véhicule*\n\n{{2.make}} {{2.model}} ({{2.license_plate}})\n\n⚠️ Entretien recommandé:\n{{if(2.mileage_warning, '• Kilométrage: ' + 2.current_mileage + ' km')}}\n{{if(2.date_warning, '• Dernier entretien: ' + formatDate(2.last_maintenance_date))}}\n\nPense à planifier ton rendez-vous!"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Scenario 5: Export Comptable Automatique",
+      "description": "Génère et envoie les exports pour comptables chaque fin de mois",
+      "trigger": {
+        "type": "scheduled",
+        "description": "Dernier jour du mois à 18h",
+        "schedule": "0 18 L * *"
+      },
+      "modules": [
+        {
+          "id": 1,
+          "type": "supabase_query",
+          "name": "Utilisateurs avec comptable",
+          "config": {
+            "table": "users",
+            "filter": {
+              "subscription_tier": ["premium"],
+              "has_accountant": true
+            }
+          }
+        },
+        {
+          "id": 2,
+          "type": "iterator",
+          "name": "Pour chaque utilisateur",
+          "config": {
+            "array": "{{1.data}}"
+          }
+        },
+        {
+          "id": 3,
+          "type": "http_request",
+          "name": "Générer Rapport Excel",
+          "config": {
+            "url": "https://votre-app.vercel.app/api/reports/generate",
+            "method": "POST",
+            "body": {
+              "user_id": "{{2.id}}",
+              "month": "{{previousMonth()}}",
+              "format": "excel",
+              "include_receipts": true
+            }
+          }
+        },
+        {
+          "id": 4,
+          "type": "email",
+          "name": "Envoyer à Comptable",
+          "config": {
+            "to": "{{2.accountant_email}}",
+            "cc": "{{2.email}}",
+            "subject": "Rapport Mensuel - {{2.name}} - {{formatMonth(previousMonth())}}",
+            "body": "Bonjour,\n\nVeuillez trouver ci-joint le rapport mensuel de {{2.name}} pour {{formatMonth(previousMonth())}}.\n\nCordialement,\nTransport Adapté Dashboard",
+            "attachments": [
+              {
+                "name": "rapport_{{formatMonth(previousMonth())}}.xlsx",
+                "data": "{{3.file_url}}"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "custom_functions": {
+    "getUserIdFromEmail": {
+      "description": "Trouve l'ID utilisateur à partir de son email",
+      "code": "async function(email) { const user = await supabase.from('users').select('id').eq('email', email).single(); return user.data?.id; }"
+    },
+    "getUserPhone": {
+      "description": "Récupère le numéro WhatsApp de l'utilisateur",
+      "code": "async function(email) { const user = await supabase.from('users').select('phone').eq('email', email).single(); return user.data?.phone; }"
+    },
+    "formatCurrency": {
+      "description": "Formate un nombre en devise CAD",
+      "code": "function(amount) { return new Intl.NumberFormat('fr-CA', { style: 'currency', currency: 'CAD' }).format(amount); }"
+    },
+    "formatInsights": {
+      "description": "Formate les insights pour WhatsApp",
+      "code": "function(insights) { return insights.slice(0, 3).map((i, idx) => `${idx + 1}. ${i.title}: ${i.message}`).join('\\n'); }"
+    },
+    "formatRecommendations": {
+      "description": "Formate les recommandations pour WhatsApp",
+      "code": "function(recs) { return recs.slice(0, 2).map((r, idx) => `${idx + 1}. ${r.title} (Économies: ${formatCurrency(r.potential_savings)})`).join('\\n'); }"
+    },
+    "formatDate": {
+      "description": "Formate une date en français",
+      "code": "function(date) { return new Date(date).toLocaleDateString('fr-CA', { year: 'numeric', month: 'long', day: 'numeric' }); }"
+    },
+    "formatMonth": {
+      "description": "Formate un mois en français",
+      "code": "function(date) { return new Date(date).toLocaleDateString('fr-CA', { year: 'numeric', month: 'long' }); }"
+    },
+    "previousMonth": {
+      "description": "Retourne le mois précédent",
+      "code": "function() { const d = new Date(); d.setMonth(d.getMonth() - 1); return d.toISOString().substring(0, 7); }"
+    }
+  },
+  "notes": [
+    "Ce blueprint contient 5 scénarios principaux pour automatiser tout le workflow",
+    "Vous devrez remplacer les URLs par vos vraies URLs de production",
+    "Les credentials Twilio, Supabase doivent être configurés dans Make.com",
+    "Testez chaque scénario individuellement avant de les activer tous",
+    "Les custom functions peuvent nécessiter des ajustements selon votre setup exact"
+  ],
+  "installation_steps": [
+    "1. Importez ce blueprint dans Make.com",
+    "2. Configurez vos connexions: Supabase, Twilio, Email",
+    "3. Remplacez toutes les URLs par vos URLs de production",
+    "4. Testez chaque scénario avec des données de test",
+    "5. Activez les scénarios un par un",
+    "6. Surveillez les logs pendant les premières 48h"
+  ]
+}
