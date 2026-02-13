@@ -10,9 +10,7 @@ import LoginPage from '@/components/auth/LoginPage';
 import LandingPage from '@/components/auth/LandingPage';
 import Rapports from '@/components/rapports/Rapports';
 import Vehicules from '@/components/vehicules/Vehicules';
-
-import Paiements from '@/components/paiements/Paiements';
-import { Home as HomeIcon, Bus, Car, CreditCard, DollarSign, Lightbulb, Upload, FileText, LogOut, Sparkles, AlertTriangle, Save, Loader2 } from 'lucide-react';
+import { Home as HomeIcon, Bus, Car, DollarSign, Lightbulb, Upload, FileText, LogOut, Sparkles, AlertTriangle, Save, Loader2 } from 'lucide-react';
 
 interface User {
   id: string;
@@ -26,7 +24,7 @@ interface User {
 export default function Home() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [authView, setAuthView] = useState<'landing' | 'login' | 'signup'>('landing');
-  const [activeTab, setActiveTab] = useState<'accueil' | 'courses' | 'vehicules' | 'paiements' | 'finances' | 'insights' | 'scan' | 'rapports' | 'chat'>('accueil');
+  const [activeTab, setActiveTab] = useState<'accueil' | 'courses' | 'vehicules' | 'finances' | 'insights' | 'scan' | 'rapports' | 'chat'>('accueil');
   const [refreshDashboard, setRefreshDashboard] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [hasVehicule, setHasVehicule] = useState<boolean | null>(null);
@@ -310,7 +308,6 @@ export default function Home() {
               { id: 'accueil' as const, label: 'Accueil', shortLabel: 'Accueil', icon: HomeIcon },
               { id: 'courses' as const, label: 'Courses', shortLabel: 'Courses', icon: Bus },
               { id: 'vehicules' as const, label: 'Véhicules', shortLabel: 'Véhicule', icon: Car },
-              { id: 'paiements' as const, label: 'Paiements', shortLabel: 'Paiements', icon: CreditCard },
               { id: 'finances' as const, label: 'Finances', shortLabel: 'Finances', icon: DollarSign },
               { id: 'insights' as const, label: 'Insights', shortLabel: 'Insights', icon: Lightbulb },
               { id: 'scan' as const, label: 'Scanner', shortLabel: 'Scanner', icon: Upload },
@@ -348,7 +345,7 @@ export default function Home() {
       {/* Main content */}
       <main className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8">
         {activeTab === 'accueil' && (
-          <Dashboard key={`accueil-${refreshDashboard}`} userId={currentUser.id} />
+          <Dashboard key={`accueil-${refreshDashboard}`} userId={currentUser.id} userName={currentUser.name} />
         )}
 
         {activeTab === 'courses' && (
@@ -357,10 +354,6 @@ export default function Home() {
 
         {activeTab === 'vehicules' && (
           <Vehicules userId={currentUser.id} />
-        )}
-
-        {activeTab === 'paiements' && (
-          <Paiements userId={currentUser.id} />
         )}
 
         {activeTab === 'finances' && (
