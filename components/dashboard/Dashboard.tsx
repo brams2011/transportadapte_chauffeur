@@ -57,17 +57,20 @@ export default function Dashboard({ userId, userName }: DashboardProps) {
     <div className="min-h-screen bg-white">
       {/* Hero Banner with Background */}
       <div
-        className="relative w-full bg-gradient-to-r from-gray-900/80 to-blue-900/80 py-16 md:py-24 overflow-hidden"
+        className="relative w-full py-16 md:py-24 overflow-hidden"
         style={{
-          backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 1200 400%22%3E%3Cdefs%3E%3ClinearGradient id=%22grad%22 x1=%220%25%22 y1=%220%25%22 x2=%22100%25%22 y2=%22100%25%22%3E%3Cstop offset=%220%25%22 style=%22stop-color:rgba(59,130,246,0.2)%22 /%3E%3Cstop offset=%22100%25%22 style=%22stop-color:rgba(15,23,42,0.4)%22 /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width=%221200%22 height=%22400%22 fill=%22url(%23grad)%22 /%3E%3C/svg%3E")',
+          backgroundImage: 'url("/images/hero-background.jpg")',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
+          backgroundAttachment: 'fixed',
         }}
       >
-        <div className="max-w-7xl mx-auto px-4 md:px-6">
+        {/* Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-r from-gray-900/85 to-blue-900/75"></div>
+        <div className="max-w-7xl mx-auto px-4 md:px-6 relative z-10">
           <div className="flex flex-col md:flex-row items-center justify-between gap-8">
             {/* Left Content */}
-            <div className="flex-1 text-white z-10">
+            <div className="flex-1 text-white">
               <h1 className="text-4xl md:text-5xl font-bold mb-2">
                 Bienvenue {civilite} {displayName}
               </h1>
