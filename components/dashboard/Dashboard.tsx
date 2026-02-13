@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Bus, Car } from 'lucide-react';
+import { Bus, Car, Activity } from 'lucide-react';
 
 interface DashboardProps {
   userId: string;
@@ -49,75 +49,151 @@ export default function Dashboard({ userId, userName }: DashboardProps) {
                    userName && userName.toLowerCase().includes('mme.') ? 'Mme' : 'M.';
   const displayName = userName ? userName.replace(/^(M\.|Mme\.?)\s*/i, '') : 'Chauffeur';
 
+  const total = tours.adapte + tours.regulier;
+  const percentAdapte = total > 0 ? ((tours.adapte / total) * 100).toFixed(1) : 0;
+  const percentRegulier = total > 0 ? ((tours.regulier / total) * 100).toFixed(1) : 0;
+
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Welcome Header */}
-        <div className="mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
-            Bienvenue {civilite} {displayName}
-          </h1>
-          <p className="text-lg text-gray-600">
-            Voici un aperçu de vos dernières activités
-          </p>
-        </div>
+    <div className="min-h-screen bg-white">
+      {/* Hero Banner with Background */}
+      <div
+        className="relative w-full bg-gradient-to-r from-gray-900/80 to-blue-900/80 py-16 md:py-24 overflow-hidden"
+        style={{
+          backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 1200 400%22%3E%3Cdefs%3E%3ClinearGradient id=%22grad%22 x1=%220%25%22 y1=%220%25%22 x2=%22100%25%22 y2=%22100%25%22%3E%3Cstop offset=%220%25%22 style=%22stop-color:rgba(59,130,246,0.2)%22 /%3E%3Cstop offset=%22100%25%22 style=%22stop-color:rgba(15,23,42,0.4)%22 /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width=%221200%22 height=%22400%22 fill=%22url(%23grad)%22 /%3E%3C/svg%3E")',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
+      >
+        <div className="max-w-7xl mx-auto px-4 md:px-6">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+            {/* Left Content */}
+            <div className="flex-1 text-white z-10">
+              <h1 className="text-4xl md:text-5xl font-bold mb-2">
+                Bienvenue {civilite} {displayName}
+              </h1>
+              <p className="text-lg md:text-xl text-gray-100">
+                Voici un aperçu de vos dernières activités
+              </p>
+            </div>
 
-        {/* Courses Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          {/* Courses Adaptées */}
-          <div className="bg-white rounded-lg shadow-lg p-8 hover:shadow-xl transition-shadow">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <p className="text-sm text-gray-600 font-semibold uppercase tracking-wider">Courses Adaptées</p>
-                <p className="text-4xl font-bold text-blue-600 mt-2">
-                  {tours.adapte}
-                </p>
-              </div>
-              <div className="bg-blue-100 p-4 rounded-full">
-                <Bus className="w-8 h-8 text-blue-600" />
+            {/* Right Icon/Visual */}
+            <div className="flex-1 flex justify-center md:justify-end opacity-50">
+              <div className="relative">
+                <Activity className="w-20 h-20 md:w-32 md:h-32 text-blue-300" />
               </div>
             </div>
-            <p className="text-sm text-gray-500">
-              Transport adapté pour passagers à mobilité réduite
-            </p>
-          </div>
-
-          {/* Courses Régulières */}
-          <div className="bg-white rounded-lg shadow-lg p-8 hover:shadow-xl transition-shadow">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <p className="text-sm text-gray-600 font-semibold uppercase tracking-wider">Courses Régulières</p>
-                <p className="text-4xl font-bold text-green-600 mt-2">
-                  {tours.regulier}
-                </p>
-              </div>
-              <div className="bg-green-100 p-4 rounded-full">
-                <Car className="w-8 h-8 text-green-600" />
-              </div>
-            </div>
-            <p className="text-sm text-gray-500">
-              Transport régulier pour tous les passagers
-            </p>
           </div>
         </div>
+      </div>
 
-        {/* Total Stats */}
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg shadow p-6 border border-blue-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 font-semibold uppercase tracking-wider">Total des Courses</p>
-              <p className="text-3xl font-bold text-gray-900 mt-2">
-                {tours.adapte + tours.regulier}
+      {/* Cards Section */}
+      <div className="max-w-7xl mx-auto px-4 md:px-6 -mt-16 relative z-10">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+          {/* Courses Adaptées Card */}
+          <div className="bg-white rounded-2xl shadow-2xl p-8 hover:shadow-3xl transition-all duration-300 transform hover:-translate-y-2">
+            <div className="flex flex-col items-center text-center">
+              <div className="bg-blue-100 p-4 rounded-full mb-4">
+                <Bus className="w-10 h-10 text-blue-600" />
+              </div>
+              <p className="text-sm font-bold text-gray-600 uppercase tracking-widest mb-3">
+                Courses Adaptées
+              </p>
+              <p className="text-5xl font-black text-blue-600 mb-4">
+                {tours.adapte}
+              </p>
+              <p className="text-xs text-gray-500 leading-relaxed">
+                Transport adapté pour passagers<br/>à mobilité réduite
               </p>
             </div>
-            <div className="text-right">
-              <p className="text-sm text-gray-500 mb-2">Répartition</p>
-              <p className="text-sm font-semibold text-blue-600">
-                {tours.adapte > 0 ? ((tours.adapte / (tours.adapte + tours.regulier)) * 100).toFixed(1) : 0}% Adapté
+          </div>
+
+          {/* Courses Régulières Card */}
+          <div className="bg-white rounded-2xl shadow-2xl p-8 hover:shadow-3xl transition-all duration-300 transform hover:-translate-y-2">
+            <div className="flex flex-col items-center text-center">
+              <div className="bg-green-100 p-4 rounded-full mb-4">
+                <Car className="w-10 h-10 text-green-600" />
+              </div>
+              <p className="text-sm font-bold text-gray-600 uppercase tracking-widest mb-3">
+                Courses Régulières
               </p>
-              <p className="text-sm font-semibold text-green-600">
-                {tours.regulier > 0 ? ((tours.regulier / (tours.adapte + tours.regulier)) * 100).toFixed(1) : 0}% Régulier
+              <p className="text-5xl font-black text-green-600 mb-4">
+                {tours.regulier}
               </p>
+              <p className="text-xs text-gray-500 leading-relaxed">
+                Transport régulier pour<br/>tous les passagers
+              </p>
+            </div>
+          </div>
+
+          {/* Total Courses Card */}
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl shadow-2xl p-8 border-2 border-blue-200 hover:shadow-3xl transition-all duration-300 transform hover:-translate-y-2">
+            <div className="flex flex-col items-center text-center">
+              <div className="bg-indigo-100 p-4 rounded-full mb-4">
+                <Activity className="w-10 h-10 text-indigo-600" />
+              </div>
+              <p className="text-sm font-bold text-gray-600 uppercase tracking-widest mb-3">
+                Total des Courses
+              </p>
+              <p className="text-5xl font-black text-gray-900 mb-4">
+                {total}
+              </p>
+              <div className="space-y-1 text-xs font-semibold">
+                <div className="flex items-center justify-center gap-2">
+                  <span className="text-blue-600">{percentAdapte}% Adapté</span>
+                </div>
+                <div className="flex items-center justify-center gap-2">
+                  <span className="text-green-600">{percentRegulier}% Régulier</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom Section */}
+      <div className="bg-gray-50 py-12 md:py-16">
+        <div className="max-w-7xl mx-auto px-4 md:px-6">
+          <div className="bg-white rounded-2xl shadow-lg p-8 md:p-12">
+            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
+              Gestion Efficace de vos Courses
+            </h2>
+            <p className="text-gray-600 mb-6">
+              Suivez en temps réel vos courses adaptées et régulières, analysez vos revenus et optimisez votre activité avec notre plateforme intelligente propulsée par l'IA.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100">
+                    <Bus className="w-6 h-6 text-blue-600" />
+                  </div>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900">Suivi en Temps Réel</h3>
+                  <p className="mt-1 text-sm text-gray-600">Monitez vos courses et vos revenus instantanément</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-green-100">
+                    <Car className="w-6 h-6 text-green-600" />
+                  </div>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900">Rapports Détaillés</h3>
+                  <p className="mt-1 text-sm text-gray-600">Obtenez des analyses complètes de votre activité</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-indigo-100">
+                    <Activity className="w-6 h-6 text-indigo-600" />
+                  </div>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900">Optimisation IA</h3>
+                  <p className="mt-1 text-sm text-gray-600">Recommandations personnalisées pour augmenter vos profits</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
