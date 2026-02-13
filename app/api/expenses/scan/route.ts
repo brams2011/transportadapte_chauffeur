@@ -5,11 +5,7 @@ import { supabase } from '@/lib/supabase';
 import formidable from 'formidable';
 import fs from 'fs';
 
-export const config = {
-  api: {
-    bodyParser: false, // Désactiver le parser par défaut pour gérer les fichiers
-  },
-};
+// Route handler dans App Router - pas besoin de config bodyParser
 
 /**
  * API Route: POST /api/expenses/scan

@@ -143,32 +143,8 @@ export async function GET(request: NextRequest) {
       }
     };
 
-    const insights = await ClaudeService.generateMonthlyInsights(financialData);
-
-    if (!insights.success) {
-      return NextResponse.json(
-        { error: 'Failed to generate insights', details: insights.error },
-        { status: 500 }
-      );
-    }
-
-    // 6. Sauvegarder les insights en base de données
-    if (insights.data?.insights) {
-      for (const insight of insights.data.insights) {
-        await supabase.from('ai_insights').insert({
-          user_id: userId,
-          type: insight.type === 'anomaly' ? 'anomaly' : 
-                insight.type === 'warning' ? 'anomaly' : 'recommendation',
-          severity: insight.severity,
-          title: insight.title,
-          message: insight.message,
-          action_required: insight.severity === 'critical'
-        });
-      }
-    }
-
-    // 7. Retourner résultats
-    return NextResponse.json({
+    // Préparer la réponse de base (sans IA)
+    const responseData = {
       success: true,
       period: {
         month: currentMonth,
@@ -198,9 +174,37 @@ export async function GET(request: NextRequest) {
         expenses_change: prevExpensesTotal > 0 ? ((totalExpenses - prevExpensesTotal) / prevExpensesTotal) * 100 : 0,
         profit_change: prevProfit > 0 ? ((netProfit - prevProfit) / prevProfit) * 100 : 0
       },
-      ai_insights: insights.data,
-      usage: insights.usage
-    });
+      ai_insights: null as any,
+      usage: null as any
+    };
+
+    // Tenter de générer les insights IA (optionnel)
+    try {
+      const insights = await ClaudeService.generateMonthlyInsights(financialData as any);
+
+      if (insights.success) {
+        // Sauvegarder les insights en base de données
+        if (insights.data?.insights) {
+          for (const insight of insights.data.insights) {
+            await supabase.from('ai_insights').insert({
+              user_id: userId,
+              type: insight.type === 'anomaly' ? 'anomaly' :
+                    insight.type === 'warning' ? 'anomaly' : 'recommendation',
+              severity: insight.severity,
+              title: insight.title,
+              message: insight.message,
+              action_required: insight.severity === 'critical'
+            });
+          }
+        }
+        responseData.ai_insights = insights.data;
+        responseData.usage = insights.usage;
+      }
+    } catch (aiError) {
+      console.error('AI insights unavailable:', aiError instanceof Error ? aiError.message : aiError);
+    }
+
+    return NextResponse.json(responseData);
 
   } catch (error) {
     console.error('Error generating insights:', error);

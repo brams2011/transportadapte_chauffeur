@@ -62,3 +62,15 @@ coverage/
 *.tmp
 *.temp
 .cache/
+
+# Netlify drop
+/netlify-drop/
+
+# Trained data files
+*.traineddata
+
+# Token files
+/token_github/
+
+# Null file
+/nul
