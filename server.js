@@ -34,23 +34,38 @@ app.use((req, res, next) => {
 
 const authenticateClient = async (req, res, next) => {
   const apiKey = req.headers['x-api-key'];
-  
+
   if (!apiKey) {
     return res.status(401).json({ error: 'Clé API requise' });
   }
-  
+
   const { data: client, error } = await supabase
     .from('clients')
     .select('*')
     .eq('api_key', apiKey)
     .eq('is_active', true)
     .single();
-  
+
   if (error || !client) {
     return res.status(401).json({ error: 'Clé API invalide' });
   }
-  
+
   req.client = client;
+  next();
+};
+
+// Middleware d'authentification admin
+const authenticateAdmin = (req, res, next) => {
+  const adminKey = req.headers['x-admin-key'];
+
+  if (!adminKey) {
+    return res.status(401).json({ error: 'Clé admin requise' });
+  }
+
+  if (adminKey !== process.env.ADMIN_API_KEY) {
+    return res.status(403).json({ error: 'Clé admin invalide' });
+  }
+
   next();
 };
 
@@ -595,60 +610,182 @@ function generateEmbedScript(embed) {
 }
 
 // ============================================
-// ROUTES D'ADMINISTRATION
+// ROUTES D'ADMINISTRATION (protégées)
 // ============================================
 
 // Créer un nouveau client
-app.post('/api/admin/clients', async (req, res) => {
+app.post('/api/admin/clients', authenticateAdmin, async (req, res) => {
   try {
     const { name, email, company } = req.body;
-    
+
+    // Validation des entrées
+    if (!name || typeof name !== 'string' || name.trim().length < 2) {
+      return res.status(400).json({ error: 'Nom requis (min 2 caractères)' });
+    }
+    if (!email || typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ error: 'Email valide requis' });
+    }
+
     const apiKey = 'ino_client_' + crypto.randomBytes(24).toString('hex');
-    
+
     const { data: client, error } = await supabase
       .from('clients')
       .insert([{
-        name,
-        email,
-        company,
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
+        company: company ? company.trim() : null,
         api_key: apiKey,
         is_active: true
       }])
       .select()
       .single();
-    
+
     if (error) {
       console.error('Supabase error:', error);
-      return res.status(500).json({ error: 'Erreur création client', details: error.message });
+      return res.status(500).json({ error: 'Erreur création client' });
     }
-    
+
     res.json({
       success: true,
       client,
       api_key: apiKey
     });
-    
+
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Erreur création client:', error);
+    res.status(500).json({ error: 'Erreur serveur' });
   }
 });
 
 // Lister tous les clients
-app.get('/api/admin/clients', async (req, res) => {
+app.get('/api/admin/clients', authenticateAdmin, async (req, res) => {
   try {
     const { data: clients, error } = await supabase
       .from('clients')
       .select('*')
       .order('created_at', { ascending: false });
-    
+
     if (error) {
       return res.status(500).json({ error: 'Erreur récupération' });
     }
-    
+
     res.json({ total: clients.length, clients });
-    
+
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Erreur liste clients:', error);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// Désactiver un client (déconnexion/révocation de clé API)
+app.post('/api/admin/clients/:clientId/deactivate', authenticateAdmin, async (req, res) => {
+  try {
+    const { clientId } = req.params;
+
+    const { data: client, error } = await supabase
+      .from('clients')
+      .update({ is_active: false })
+      .eq('id', clientId)
+      .select()
+      .single();
+
+    if (error || !client) {
+      return res.status(404).json({ error: 'Client non trouvé' });
+    }
+
+    res.json({
+      success: true,
+      message: 'Client désactivé avec succès',
+      client
+    });
+
+  } catch (error) {
+    console.error('Erreur désactivation client:', error);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// Réactiver un client
+app.post('/api/admin/clients/:clientId/activate', authenticateAdmin, async (req, res) => {
+  try {
+    const { clientId } = req.params;
+
+    const { data: client, error } = await supabase
+      .from('clients')
+      .update({ is_active: true })
+      .eq('id', clientId)
+      .select()
+      .single();
+
+    if (error || !client) {
+      return res.status(404).json({ error: 'Client non trouvé' });
+    }
+
+    res.json({
+      success: true,
+      message: 'Client réactivé avec succès',
+      client
+    });
+
+  } catch (error) {
+    console.error('Erreur réactivation client:', error);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// Régénérer la clé API d'un client (rotation de clé)
+app.post('/api/admin/clients/:clientId/rotate-key', authenticateAdmin, async (req, res) => {
+  try {
+    const { clientId } = req.params;
+
+    const newApiKey = 'ino_client_' + crypto.randomBytes(24).toString('hex');
+
+    const { data: client, error } = await supabase
+      .from('clients')
+      .update({ api_key: newApiKey })
+      .eq('id', clientId)
+      .select()
+      .single();
+
+    if (error || !client) {
+      return res.status(404).json({ error: 'Client non trouvé' });
+    }
+
+    res.json({
+      success: true,
+      message: 'Clé API régénérée avec succès',
+      client,
+      new_api_key: newApiKey
+    });
+
+  } catch (error) {
+    console.error('Erreur rotation clé:', error);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// Endpoint de déconnexion pour les clients (invalide leur propre clé)
+app.post('/api/logout', authenticateClient, async (req, res) => {
+  try {
+    const { data: client, error } = await supabase
+      .from('clients')
+      .update({ is_active: false })
+      .eq('id', req.client.id)
+      .select()
+      .single();
+
+    if (error) {
+      return res.status(500).json({ error: 'Erreur déconnexion' });
+    }
+
+    res.json({
+      success: true,
+      message: 'Déconnecté avec succès. Votre clé API a été invalidée.'
+    });
+
+  } catch (error) {
+    console.error('Erreur logout:', error);
+    res.status(500).json({ error: 'Erreur serveur' });
   }
 });
 
@@ -659,16 +796,20 @@ app.get('/api/admin/clients', async (req, res) => {
 app.get('/', (req, res) => {
   res.json({
     name: 'Ino Embed API',
-    version: '1.0.0',
+    version: '1.1.0',
     status: 'online',
     endpoints: {
       health: 'GET /health',
       embed_script: 'GET /embed/:embedId.js',
       track_event: 'POST /track/:embedId',
-      api_embeds: 'GET/POST /api/embeds',
-      api_embed: 'GET/PUT/DELETE /api/embeds/:embedId',
-      api_analytics: 'GET /api/embeds/:embedId/analytics',
-      admin_clients: 'GET/POST /api/admin/clients'
+      api_embeds: 'GET/POST /api/embeds (requiert X-API-Key)',
+      api_embed: 'GET/PUT/DELETE /api/embeds/:embedId (requiert X-API-Key)',
+      api_analytics: 'GET /api/embeds/:embedId/analytics (requiert X-API-Key)',
+      api_logout: 'POST /api/logout (requiert X-API-Key)',
+      admin_clients: 'GET/POST /api/admin/clients (requiert X-Admin-Key)',
+      admin_deactivate: 'POST /api/admin/clients/:clientId/deactivate (requiert X-Admin-Key)',
+      admin_activate: 'POST /api/admin/clients/:clientId/activate (requiert X-Admin-Key)',
+      admin_rotate_key: 'POST /api/admin/clients/:clientId/rotate-key (requiert X-Admin-Key)'
     }
   });
 });
