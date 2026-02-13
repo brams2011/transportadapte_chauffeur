@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Dashboard from '@/components/dashboard/Dashboard';
+import FinancialDashboard from '@/components/dashboard/FinancialDashboard';
 import Tournees from '@/components/tournees/Tournees';
 import ReceiptScanner from '@/components/forms/ReceiptScanner';
 import ChatBot from '@/components/chat/ChatBot';
@@ -357,7 +358,7 @@ export default function Home() {
         )}
 
         {activeTab === 'finances' && (
-          <Dashboard key={`finances-${refreshDashboard}`} userId={currentUser.id} />
+          <FinancialDashboard key={`finances-${refreshDashboard}`} userId={currentUser.id} />
         )}
 
         {activeTab === 'insights' && (
