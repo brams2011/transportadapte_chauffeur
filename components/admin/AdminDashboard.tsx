@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import Paiements from '@/components/paiements/Paiements';
 
 // ─── Types ───────────────────────────────────────────────────────
 interface Stats {
@@ -79,9 +80,9 @@ interface AdminDashboardProps {
 
 // ─── Config abonnements ──────────────────────────────────────────
 const SUBSCRIPTION_PLANS = [
-  { tier: 'basic', label: 'Basic', price: 0, color: 'gray', features: ['Dashboard', 'Scanner', 'Courses'] },
-  { tier: 'pro', label: 'Pro', price: 29.99, color: 'blue', features: ['Tout Basic', 'Rapports PDF', 'Véhicules illimités', 'Square'] },
-  { tier: 'premium', label: 'Premium', price: 59.99, color: 'purple', features: ['Tout Pro', 'IA Assistant', 'Support prioritaire', 'Multi-véhicules'] },
+  { tier: 'basic', label: 'Basic', price: 20, color: 'gray', features: ['Dashboard', 'Scanner', 'Courses'] },
+  { tier: 'pro', label: 'Pro', price: 25, color: 'blue', features: ['Tout Basic', 'Rapports PDF', 'Véhicules illimités', 'Square'] },
+  { tier: 'premium', label: 'Premium', price: 30, color: 'purple', features: ['Tout Pro', 'IA Assistant', 'Support prioritaire', 'Multi-véhicules'] },
 ];
 
 // ─── Composant Principal ─────────────────────────────────────────
@@ -621,11 +622,17 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
         {/* ═══ PAIEMENTS SQUARE ═══ */}
         {activeTab === 'paiements' && (
           <div className="space-y-6 animate-fade-in">
-            {/* Stats paiements */}
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              <StatCard icon={CheckCircle} label="Total reçu" value={formatMoney(squareTotalReceived)} color="green" />
-              <StatCard icon={Clock} label="En attente" value={formatMoney(squareTotalPending)} color="orange" />
-              <StatCard icon={CreditCard} label="Transactions" value={String(transactions.length)} color="blue" />
+            {/* Composant Paiements des chauffeurs */}
+            <Paiements userId="" />
+
+            {/* Stats paiements Square */}
+            <div className="mt-8">
+              <h3 className="text-xl font-bold text-gray-100 mb-4">Transactions Square</h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <StatCard icon={CheckCircle} label="Total reçu" value={formatMoney(squareTotalReceived)} color="green" />
+                <StatCard icon={Clock} label="En attente" value={formatMoney(squareTotalPending)} color="orange" />
+                <StatCard icon={CreditCard} label="Transactions" value={String(transactions.length)} color="blue" />
+              </div>
             </div>
 
             {/* Liste transactions */}
