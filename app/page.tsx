@@ -12,6 +12,7 @@ import LandingPage from '@/components/auth/LandingPage';
 import Rapports from '@/components/rapports/Rapports';
 import Vehicules from '@/components/vehicules/Vehicules';
 import { Home as HomeIcon, Bus, Car, DollarSign, Lightbulb, Upload, FileText, LogOut, Sparkles, AlertTriangle, Save, Loader2 } from 'lucide-react';
+import { supabaseBrowser } from '@/lib/supabase-browser';
 
 interface User {
   id: string;
@@ -41,11 +42,37 @@ export default function Home() {
   });
 
   useEffect(() => {
-    const savedSession = localStorage.getItem('transport_current_user');
-    if (savedSession) {
-      setCurrentUser(JSON.parse(savedSession));
-    }
-    setIsLoading(false);
+    // Vérifier la session Supabase Auth en premier
+    const checkSession = async () => {
+      try {
+        const { data: { session } } = await supabaseBrowser.auth.getSession();
+        if (session?.user) {
+          // Session auth valide — charger le profil local
+          const savedSession = localStorage.getItem('transport_current_user');
+          if (savedSession) {
+            const parsed = JSON.parse(savedSession);
+            // Vérifier que le profil local correspond à l'utilisateur auth
+            if (parsed.email === session.user.email) {
+              setCurrentUser(parsed);
+            } else {
+              // Mismatch — nettoyer
+              localStorage.removeItem('transport_current_user');
+            }
+          }
+        } else {
+          // Pas de session auth — nettoyer le localStorage
+          localStorage.removeItem('transport_current_user');
+        }
+      } catch {
+        // Fallback : utiliser localStorage si Supabase est inaccessible
+        const savedSession = localStorage.getItem('transport_current_user');
+        if (savedSession) {
+          setCurrentUser(JSON.parse(savedSession));
+        }
+      }
+      setIsLoading(false);
+    };
+    checkSession();
   }, []);
 
   // Charger JotForm Agent avec identity verification
@@ -135,7 +162,9 @@ export default function Home() {
     setRefreshDashboard(prev => prev + 1);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    // Déconnexion Supabase Auth + nettoyage local
+    await supabaseBrowser.auth.signOut();
     setCurrentUser(null);
     localStorage.removeItem('transport_current_user');
     setAuthView('landing');
@@ -285,7 +314,7 @@ export default function Home() {
               </div>
               <div className="min-w-0">
                 <h1 className="text-lg md:text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent truncate">
-                  Transport Adapté
+                  Ino-Service
                 </h1>
                 <p className="text-xs md:text-sm text-gray-600 flex items-center gap-1">
                   <Sparkles className="w-3 h-3 flex-shrink-0" />
@@ -442,7 +471,7 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-6">
             {/* Column 1 */}
             <div>
-              <h3 className="font-semibold text-gray-900 mb-3">Transport Adapté</h3>
+              <h3 className="font-semibold text-gray-900 mb-3">Ino-Service</h3>
               <p className="text-sm text-gray-600">
                 Gestion financière intelligente propulsée par l'intelligence artificielle Claude AI
               </p>

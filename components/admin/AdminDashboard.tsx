@@ -80,9 +80,8 @@ interface AdminDashboardProps {
 
 // ─── Config abonnements ──────────────────────────────────────────
 const SUBSCRIPTION_PLANS = [
-  { tier: 'basic', label: 'Basic', price: 20, color: 'gray', features: ['Dashboard', 'Scanner', 'Courses'] },
-  { tier: 'pro', label: 'Pro', price: 25, color: 'blue', features: ['Tout Basic', 'Rapports PDF', 'Véhicules illimités', 'Square'] },
-  { tier: 'premium', label: 'Premium', price: 30, color: 'purple', features: ['Tout Pro', 'IA Assistant', 'Support prioritaire', 'Multi-véhicules'] },
+  { tier: 'pro', label: 'Pro', price: 20, color: 'blue', features: ['Scan factures illimité', 'Dashboard temps réel', 'Suivi tournées', 'Rapports mensuels', 'Assistant IA personnel', 'Alertes intelligentes', 'Gestion véhicule avancée', 'Support prioritaire'] },
+  { tier: 'premium', label: 'Premium', price: 30, color: 'purple', features: ['Tout dans Pro', 'Accès comptable direct', 'Rapports personnalisés', 'Support dédié 24/7', 'Multi-véhicules', 'Analyses financières avancées'] },
 ];
 
 // ─── Composant Principal ─────────────────────────────────────────
@@ -168,13 +167,12 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
 
   // Bénéfices abonnements
   const subscriptionRevenue = chauffeurs.reduce((sum, c) => {
-    const plan = SUBSCRIPTION_PLANS.find(p => p.tier === (c.subscription_tier || 'basic'));
+    const plan = SUBSCRIPTION_PLANS.find(p => p.tier === (c.subscription_tier || 'pro'));
     return sum + (plan?.price || 0);
   }, 0);
 
   const tierCounts = {
-    basic: chauffeurs.filter(c => (c.subscription_tier || 'basic') === 'basic').length,
-    pro: chauffeurs.filter(c => c.subscription_tier === 'pro').length,
+    pro: chauffeurs.filter(c => !c.subscription_tier || c.subscription_tier === 'pro' || c.subscription_tier === 'basic').length,
     premium: chauffeurs.filter(c => c.subscription_tier === 'premium').length,
   };
 
@@ -211,7 +209,7 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
         headers: ['Nom', 'Email', 'Entreprise', 'Statut', 'Abonnement', 'Revenus', 'Depenses', 'Profit', 'Vehicules', 'Courses'],
         rows: chauffeurs.map(c => [
           c.name, c.email, c.transport_company || '', c.actif ? 'Actif' : 'Inactif',
-          c.subscription_tier || 'basic', c.stats.totalRevenus.toFixed(2), c.stats.totalDepenses.toFixed(2),
+          c.subscription_tier || 'pro', c.stats.totalRevenus.toFixed(2), c.stats.totalDepenses.toFixed(2),
           c.stats.profit.toFixed(2), String(c.stats.nbVehicules), String(c.stats.nbTournees),
         ]),
       };
@@ -230,8 +228,8 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
         title: 'Rapport Abonnements',
         headers: ['Nom', 'Email', 'Abonnement', 'Prix mensuel', 'Statut'],
         rows: chauffeurs.map(c => {
-          const plan = SUBSCRIPTION_PLANS.find(p => p.tier === (c.subscription_tier || 'basic'));
-          return [c.name, c.email, plan?.label || 'Basic', plan?.price?.toFixed(2) || '0.00', c.actif ? 'Actif' : 'Inactif'];
+          const plan = SUBSCRIPTION_PLANS.find(p => p.tier === (c.subscription_tier || 'pro'));
+          return [c.name, c.email, plan?.label || 'Pro', plan?.price?.toFixed(2) || '20.00', c.actif ? 'Actif' : 'Inactif'];
         }),
         totals: [
           ['Total mensuel', '', '', subscriptionRevenue.toFixed(2), ''],
@@ -479,7 +477,7 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
                         </td>
                         <td className="py-3 px-4 text-gray-400 hidden md:table-cell">{c.transport_company || '-'}</td>
                         <td className="py-3 px-4 text-center hidden sm:table-cell">
-                          <TierBadge tier={c.subscription_tier || 'basic'} />
+                          <TierBadge tier={c.subscription_tier || 'pro'} />
                         </td>
                         <td className="py-3 px-4 text-right font-semibold text-green-400">{formatMoney(c.stats.totalRevenus)}</td>
                         <td className="py-3 px-4 text-right text-orange-400 hidden md:table-cell">{formatMoney(c.stats.totalDepenses)}</td>
@@ -699,22 +697,22 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <StatCard icon={Crown} label="Revenu mensuel" value={formatMoney(subscriptionRevenue)} color="orange" />
               <StatCard icon={TrendingUp} label="Revenu annuel est." value={formatMoney(subscriptionRevenue * 12)} color="green" />
-              <StatCard icon={Star} label="Pro + Premium" value={String(tierCounts.pro + tierCounts.premium)} color="purple" />
-              <StatCard icon={Users} label="Basic (gratuit)" value={String(tierCounts.basic)} color="gray" />
+              <StatCard icon={Star} label="Pro (20$)" value={String(tierCounts.pro)} color="blue" />
+              <StatCard icon={Users} label="Premium (30$)" value={String(tierCounts.premium)} color="purple" />
             </div>
 
             {/* Plans */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {SUBSCRIPTION_PLANS.map(plan => {
                 const count = tierCounts[plan.tier as keyof typeof tierCounts] || 0;
                 const revenue = count * plan.price;
                 return (
                   <div key={plan.tier} className={`bg-gray-900 border rounded-xl p-5 ${
-                    plan.tier === 'premium' ? 'border-purple-700' : plan.tier === 'pro' ? 'border-blue-700' : 'border-gray-800'
+                    plan.tier === 'premium' ? 'border-purple-700' : 'border-blue-700'
                   }`}>
                     <div className="flex items-center justify-between mb-3">
                       <h3 className={`font-bold text-lg ${
-                        plan.tier === 'premium' ? 'text-purple-400' : plan.tier === 'pro' ? 'text-blue-400' : 'text-gray-400'
+                        plan.tier === 'premium' ? 'text-purple-400' : 'text-blue-400'
                       }`}>{plan.label}</h3>
                       <span className="text-xl font-bold text-gray-200">{plan.price > 0 ? formatMoney(plan.price) : 'Gratuit'}</span>
                     </div>
@@ -753,7 +751,7 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
                   </thead>
                   <tbody>
                     {chauffeurs.map(c => {
-                      const currentTier = c.subscription_tier || 'basic';
+                      const currentTier = c.subscription_tier || 'pro';
                       const currentPlan = SUBSCRIPTION_PLANS.find(p => p.tier === currentTier);
                       return (
                         <tr key={c.id} className="border-t border-gray-800 hover:bg-gray-800/30">
@@ -823,9 +821,8 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
                   <tbody className="text-gray-300">
                     <tr className="border-t border-gray-800"><td className="py-2 px-3 font-bold">Revenu abonnements (mensuel)</td><td className="text-right py-2 px-3 font-bold text-blue-400">{formatMoney(subscriptionRevenue)}</td></tr>
                     <tr className="border-t border-gray-800"><td className="py-2 px-3 font-bold">Revenu abonnements (annuel est.)</td><td className="text-right py-2 px-3 font-bold text-blue-400">{formatMoney(subscriptionRevenue * 12)}</td></tr>
-                    <tr className="border-t border-gray-800"><td className="py-2 px-3">Abonnés Basic</td><td className="text-right py-2 px-3">{tierCounts.basic}</td></tr>
-                    <tr className="border-t border-gray-800"><td className="py-2 px-3">Abonnés Pro</td><td className="text-right py-2 px-3 text-blue-400">{tierCounts.pro}</td></tr>
-                    <tr className="border-t border-gray-800"><td className="py-2 px-3">Abonnés Premium</td><td className="text-right py-2 px-3 text-purple-400">{tierCounts.premium}</td></tr>
+                    <tr className="border-t border-gray-800"><td className="py-2 px-3">Abonnés Pro (20$/mois)</td><td className="text-right py-2 px-3 text-blue-400">{tierCounts.pro}</td></tr>
+                    <tr className="border-t border-gray-800"><td className="py-2 px-3">Abonnés Premium (30$/mois)</td><td className="text-right py-2 px-3 text-purple-400">{tierCounts.premium}</td></tr>
                   </tbody>
                 </table>
               </div>
@@ -857,12 +854,11 @@ function StatCard({ icon: Icon, label, value, color }: { icon: any; label: strin
 
 function TierBadge({ tier }: { tier: string }) {
   const styles: Record<string, string> = {
-    basic: 'bg-gray-800 text-gray-400',
     pro: 'bg-blue-900/50 text-blue-400',
     premium: 'bg-purple-900/50 text-purple-400',
   };
-  const labels: Record<string, string> = { basic: 'Basic', pro: 'Pro', premium: 'Premium' };
-  return <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${styles[tier] || styles.basic}`}>{labels[tier] || tier}</span>;
+  const labels: Record<string, string> = { pro: 'Pro', premium: 'Premium' };
+  return <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${styles[tier] || styles.pro}`}>{labels[tier] || 'Pro'}</span>;
 }
 
 function ReportCard({ title, description, icon: Icon, color, onDownloadCSV, onDownloadPDF }: {

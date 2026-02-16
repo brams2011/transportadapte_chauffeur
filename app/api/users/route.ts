@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, email, phone, transport_company, status } = body;
+    const { id, name, email, phone, transport_company, status } = body;
 
     if (!name || !email) {
       return NextResponse.json(
@@ -72,16 +72,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const insertData: Record<string, unknown> = {
+      name,
+      email,
+      phone: phone || null,
+      transport_company: transport_company || null,
+      status: status || 'owner',
+      subscription_tier: 'basic',
+    };
+
+    // Lier le profil à l'ID auth Supabase si fourni
+    if (id) {
+      insertData.id = id;
+    }
+
     const { data, error } = await supabase
       .from('users')
-      .insert({
-        name,
-        email,
-        phone: phone || null,
-        transport_company: transport_company || null,
-        status: status || 'owner',
-        subscription_tier: 'basic',
-      })
+      .insert(insertData)
       .select()
       .single();
 

@@ -59,7 +59,7 @@ export default function Dashboard({ userId, userName }: DashboardProps) {
       <div
         className="relative w-full py-16 md:py-24 overflow-hidden"
         style={{
-          backgroundImage: 'url("/images/hero-background.jpg")',
+          backgroundImage: 'url("/images/hero-background.png")',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundAttachment: 'fixed',

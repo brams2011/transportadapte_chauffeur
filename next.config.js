@@ -13,8 +13,10 @@ const nextConfig = {
   // Mode strict React
   reactStrictMode: true,
 
-  // Externaliser tesseract.js pour éviter le bundling Turbopack
-  serverExternalPackages: ['tesseract.js'],
+  // Externaliser tesseract.js
+  experimental: {
+    serverComponentsExternalPackages: ['tesseract.js'],
+  },
 };
 
 module.exports = nextConfig;

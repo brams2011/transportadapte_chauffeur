@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createWorker } from 'tesseract.js';
-import { ClaudeService } from '@/lib/claude-service';
+import { classifyReceiptWithTesseract } from '@/lib/receipt-parser';
 import { supabase } from '@/lib/supabase';
 import formidable from 'formidable';
 import fs from 'fs';
@@ -20,6 +20,7 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     const file = formData.get('receipt') as File;
     const userId = formData.get('user_id') as string;
+    const preview = formData.get('preview') === 'true'; // Mode preview pour validation
 
     if (!file) {
       return NextResponse.json(
@@ -35,7 +36,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('Processing receipt:', file.name, 'Size:', file.size);
+    console.log('Processing receipt:', file.name, 'Size:', file.size, 'Preview mode:', preview);
 
     // 2. Convertir le fichier en buffer pour OCR
     const bytes = await file.arrayBuffer();
@@ -57,9 +58,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 4. Classification avec Claude AI
-    console.log('Classifying receipt with Claude AI...');
-    const classification = await ClaudeService.classifyReceipt(ocrText);
+    // 4. Classification avec Tesseract (sans IA)
+    console.log('Classifying receipt with Tesseract parser...');
+    const classification = await classifyReceiptWithTesseract(ocrText);
 
     if (!classification.success || !classification.data) {
       return NextResponse.json(
@@ -70,7 +71,7 @@ export async function POST(request: NextRequest) {
 
     const expenseData = classification.data;
 
-    // 5. Upload de l'image sur Supabase Storage
+    // 5. Upload de l'image sur Supabase Storage (même en mode preview)
     const fileName = `${userId}/${Date.now()}-${file.name}`;
     const { data: uploadData, error: uploadError } = await supabase
       .storage
@@ -85,9 +86,23 @@ export async function POST(request: NextRequest) {
       // Continue quand même sans l'upload
     }
 
-    const receiptUrl = uploadData 
+    const receiptUrl = uploadData
       ? supabase.storage.from('receipts').getPublicUrl(uploadData.path).data.publicUrl
       : null;
+
+    // Si mode preview, retourner seulement les données pour validation
+    if (preview) {
+      return NextResponse.json({
+        success: true,
+        preview: true,
+        data: {
+          ...expenseData,
+          receipt_url: receiptUrl
+        },
+        ocr_text: ocrText.substring(0, 500),
+        message: 'Receipt scanned successfully. Please review and confirm.'
+      });
+    }
 
     // 6. Sauvegarder dans la base de données
     const { data: expense, error: dbError } = await supabase
@@ -115,7 +130,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 7. Vérifier si c'est une anomalie
+    // 7. Vérifier si c'est une anomalie (détection simple)
     const { data: historicalExpenses } = await supabase
       .from('expenses')
       .select('amount')
@@ -124,34 +139,20 @@ export async function POST(request: NextRequest) {
       .gte('date', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
       .order('date', { ascending: false });
 
-    if (historicalExpenses && historicalExpenses.length > 0) {
+    if (historicalExpenses && historicalExpenses.length > 3) {
       const amounts = historicalExpenses.map(e => e.amount);
       const avg = amounts.reduce((a, b) => a + b, 0) / amounts.length;
-      const median = amounts.sort((a, b) => a - b)[Math.floor(amounts.length / 2)];
 
-      const anomalyCheck = await ClaudeService.detectAnomaly({
-        date: expenseData.date,
-        category: expenseData.category,
-        amount: expenseData.amount,
-        vendor: expenseData.vendor,
-        avg_amount: avg,
-        median_amount: median,
-        min_amount: Math.min(...amounts),
-        max_amount: Math.max(...amounts),
-        count: amounts.length,
-        category_total: amounts.reduce((a, b) => a + b, 0),
-        trend: 'stable' // Simplification, à calculer réellement
-      });
-
-      // Si anomalie détectée, créer une alerte
-      if (anomalyCheck.success && anomalyCheck.data?.is_anomaly) {
+      // Détection simple: si montant > 150% de la moyenne
+      if (expenseData.amount && expenseData.amount > avg * 1.5) {
+        const percentage = ((expenseData.amount / avg - 1) * 100).toFixed(0);
         await supabase.from('ai_insights').insert({
           user_id: userId,
           type: 'anomaly',
-          severity: anomalyCheck.data.severity,
+          severity: expenseData.amount > avg * 2 ? 'critical' : 'warning',
           title: `Dépense inhabituelle: ${expenseData.category}`,
-          message: anomalyCheck.data.reason,
-          action_required: anomalyCheck.data.should_alert_user
+          message: `Cette dépense (${expenseData.amount}$) est ${percentage}% plus élevée que votre moyenne (${avg.toFixed(2)}$)`,
+          action_required: expenseData.amount > avg * 2
         });
       }
     }

@@ -17,6 +17,7 @@ import {
   Phone,
   Mail,
   MapPin,
+  Loader2,
 } from 'lucide-react';
 
 interface LandingPageProps {
@@ -26,6 +27,32 @@ interface LandingPageProps {
 
 export default function LandingPage({ onGoToLogin, onGoToSignup }: LandingPageProps) {
   const [selectedPlan, setSelectedPlan] = useState('pro');
+  const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+
+  const handleSubscribe = async (planName: string, amount: number) => {
+    setLoadingPlan(planName);
+    try {
+      const res = await fetch('/api/square/payment-links', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount,
+          description: `Ino-Service - Forfait ${planName}`,
+          customerName: 'Chauffeur',
+        }),
+      });
+      const data = await res.json();
+      if (data.success && data.link?.url) {
+        window.location.href = data.link.url;
+      } else {
+        alert(data.error || 'Erreur lors de la création du paiement');
+      }
+    } catch {
+      alert('Erreur de connexion. Réessayez.');
+    } finally {
+      setLoadingPlan(null);
+    }
+  };
 
   // JotForm Agent chatbot
   useEffect(() => {
@@ -51,7 +78,7 @@ export default function LandingPage({ onGoToLogin, onGoToSignup }: LandingPagePr
                   <path d="M18.92 5.01C18.72 4.42 18.16 4 17.5 4h-11c-.66 0-1.21.42-1.42 1.01L3 11v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 15c-.83 0-1.5-.67-1.5-1.5S5.67 12 6.5 12s1.5.67 1.5 1.5S7.33 15 6.5 15zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 10l1.5-4.5h11L19 10H5z" />
                 </svg>
               </div>
-              <span className="text-lg md:text-xl font-bold text-gray-800">Transport Adapte</span>
+              <span className="text-lg md:text-xl font-bold text-gray-800">Ino-Service</span>
             </div>
             <div className="hidden md:flex items-center gap-8">
               <a href="#fonctionnalites" className="text-gray-600 hover:text-amber-600 transition-colors font-medium">Fonctionnalites</a>
@@ -134,7 +161,7 @@ export default function LandingPage({ onGoToLogin, onGoToSignup }: LandingPagePr
                 onClick={onGoToSignup}
                 className="bg-amber-500 text-white px-8 py-4 rounded-full font-bold text-lg hover:bg-amber-600 transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2 group"
               >
-                Essai Gratuit 30 Jours
+                Essai Gratuit 15 Jours
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </button>
               <button
@@ -390,44 +417,37 @@ export default function LandingPage({ onGoToLogin, onGoToSignup }: LandingPagePr
               Un prix qui fait du sens
             </h2>
             <p className="text-lg md:text-xl text-gray-600">
-              Tous les plans incluent 30 jours d&apos;essai gratuit
+              Tous les plans incluent 15 jours d&apos;essai gratuit
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6 md:gap-8 max-w-6xl mx-auto items-start">
-            {/* Basic */}
-            <div className="bg-white p-6 md:p-8 rounded-2xl shadow-lg border-2 border-gray-200">
-              <h3 className="text-2xl font-bold text-gray-900 mb-2 text-center">Basic</h3>
-              <div className="text-4xl font-bold text-gray-900 mb-6 text-center">
-                39$<span className="text-lg font-normal text-gray-600">/mois</span>
-              </div>
-              <ul className="space-y-4 mb-8">
-                {['Scan factures illimite', 'Dashboard temps reel', 'Suivi tournees', 'Rapports mensuels'].map((item) => (
-                  <li key={item} className="flex items-start gap-3">
-                    <CheckCircle className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
-                    <span className="text-gray-700">{item}</span>
-                  </li>
-                ))}
-              </ul>
-              <button
-                onClick={onGoToSignup}
-                className="w-full bg-gray-200 text-gray-900 py-3 rounded-full font-semibold hover:bg-gray-300 transition-colors"
-              >
-                Essai Gratuit 30 Jours
-              </button>
-            </div>
-
+          <div className="grid md:grid-cols-2 gap-6 md:gap-8 max-w-4xl mx-auto items-start">
             {/* Pro */}
             <div className="bg-gradient-to-br from-amber-500 to-orange-500 p-6 md:p-8 rounded-2xl shadow-2xl border-4 border-yellow-300 relative md:scale-105">
               <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-yellow-300 text-amber-900 px-4 py-1 rounded-full text-sm font-bold whitespace-nowrap">
                 POPULAIRE
               </div>
               <h3 className="text-2xl font-bold text-white mb-2 text-center">Pro</h3>
-              <div className="text-4xl font-bold text-white mb-6 text-center">
-                49$<span className="text-lg font-normal text-amber-100">/mois</span>
+              <div className="text-center mb-1">
+                <span className="text-lg text-amber-200 line-through">30$/mois</span>
+              </div>
+              <div className="text-4xl font-bold text-white mb-2 text-center">
+                20$<span className="text-lg font-normal text-amber-100">/mois</span>
+              </div>
+              <div className="text-center mb-6">
+                <span className="bg-yellow-300 text-amber-900 px-3 py-1 rounded-full text-xs font-bold">PROMO -33%</span>
               </div>
               <ul className="space-y-4 mb-8">
-                {['Tout dans Basic +', 'Assistant IA personnel', 'Alertes intelligentes', 'Gestion vehicule avancee', 'Support prioritaire'].map((item) => (
+                {[
+                  'Scan factures illimite',
+                  'Dashboard temps reel',
+                  'Suivi tournees',
+                  'Rapports mensuels',
+                  'Assistant IA personnel',
+                  'Alertes intelligentes',
+                  'Gestion vehicule avancee',
+                  'Support prioritaire',
+                ].map((item) => (
                   <li key={item} className="flex items-start gap-3">
                     <CheckCircle className="w-5 h-5 text-yellow-200 mt-0.5 flex-shrink-0" />
                     <span className="text-white">{item}</span>
@@ -435,21 +455,45 @@ export default function LandingPage({ onGoToLogin, onGoToSignup }: LandingPagePr
                 ))}
               </ul>
               <button
-                onClick={onGoToSignup}
-                className="w-full bg-white text-amber-700 py-3 rounded-full font-bold hover:bg-amber-50 transition-colors shadow-lg"
+                onClick={() => handleSubscribe('Pro', 20)}
+                disabled={loadingPlan === 'Pro'}
+                className="w-full bg-white text-amber-700 py-3 rounded-full font-bold hover:bg-amber-50 transition-colors shadow-lg disabled:opacity-70 flex items-center justify-center gap-2"
               >
-                Essai Gratuit 30 Jours
+                {loadingPlan === 'Pro' ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Redirection...
+                  </>
+                ) : (
+                  'S\'abonner - 20$/mois'
+                )}
               </button>
             </div>
 
             {/* Premium */}
-            <div className="bg-white p-6 md:p-8 rounded-2xl shadow-lg border-2 border-gray-200">
+            <div className="bg-white p-6 md:p-8 rounded-2xl shadow-lg border-2 border-gray-200 relative">
+              <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gray-800 text-white px-4 py-1 rounded-full text-sm font-bold whitespace-nowrap">
+                COMPLET
+              </div>
               <h3 className="text-2xl font-bold text-gray-900 mb-2 text-center">Premium</h3>
-              <div className="text-4xl font-bold text-gray-900 mb-6 text-center">
-                99$<span className="text-lg font-normal text-gray-600">/mois</span>
+              <div className="text-center mb-1">
+                <span className="text-lg text-gray-400 line-through">45$/mois</span>
+              </div>
+              <div className="text-4xl font-bold text-gray-900 mb-2 text-center">
+                30$<span className="text-lg font-normal text-gray-600">/mois</span>
+              </div>
+              <div className="text-center mb-6">
+                <span className="bg-gray-800 text-white px-3 py-1 rounded-full text-xs font-bold">PROMO -33%</span>
               </div>
               <ul className="space-y-4 mb-8">
-                {['Tout dans Pro +', 'Acces comptable direct', 'Rapports personnalises', 'Support dedie 24/7', 'Multi-vehicules'].map((item) => (
+                {[
+                  'Tout dans Pro +',
+                  'Acces comptable direct',
+                  'Rapports personnalises',
+                  'Support dedie 24/7',
+                  'Multi-vehicules',
+                  'Analyses financieres avancees',
+                ].map((item) => (
                   <li key={item} className="flex items-start gap-3">
                     <CheckCircle className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
                     <span className="text-gray-700">{item}</span>
@@ -457,10 +501,18 @@ export default function LandingPage({ onGoToLogin, onGoToSignup }: LandingPagePr
                 ))}
               </ul>
               <button
-                onClick={onGoToSignup}
-                className="w-full bg-gray-200 text-gray-900 py-3 rounded-full font-semibold hover:bg-gray-300 transition-colors"
+                onClick={() => handleSubscribe('Premium', 30)}
+                disabled={loadingPlan === 'Premium'}
+                className="w-full bg-gray-800 text-white py-3 rounded-full font-semibold hover:bg-gray-900 transition-colors disabled:opacity-70 flex items-center justify-center gap-2"
               >
-                Essai Gratuit 30 Jours
+                {loadingPlan === 'Premium' ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Redirection...
+                  </>
+                ) : (
+                  'S\'abonner - 30$/mois'
+                )}
               </button>
             </div>
           </div>
@@ -476,14 +528,14 @@ export default function LandingPage({ onGoToLogin, onGoToSignup }: LandingPagePr
                 <div className="text-sm text-gray-600">economises/mois en moyenne</div>
               </div>
               <div>
-                <div className="text-3xl font-bold text-amber-600 mb-2">49$</div>
+                <div className="text-3xl font-bold text-amber-600 mb-2">20$</div>
                 <div className="text-sm text-gray-600">cout du plan Pro</div>
               </div>
             </div>
             <div className="mt-6 pt-6 border-t-2 border-amber-200 text-center">
-              <div className="text-3xl md:text-4xl font-bold text-amber-600 mb-2">= 651$/mois</div>
+              <div className="text-3xl md:text-4xl font-bold text-amber-600 mb-2">= 680$/mois</div>
               <div className="text-lg text-gray-700 font-semibold">de profit supplementaire!</div>
-              <div className="text-sm text-gray-600 mt-2">Soit 7,812$/an dans tes poches</div>
+              <div className="text-sm text-gray-600 mt-2">Soit 8,160$/an dans tes poches</div>
             </div>
           </div>
         </div>
@@ -497,7 +549,7 @@ export default function LandingPage({ onGoToLogin, onGoToSignup }: LandingPagePr
           </h2>
           <p className="text-lg md:text-2xl text-amber-100 mb-10 max-w-3xl mx-auto">
             Rejoins plus de 100 chauffeurs qui economisent du temps et de l&apos;argent chaque mois.
-            Essaie gratuitement pendant 30 jours, aucune carte de credit requise.
+            Essaie gratuitement pendant 15 jours, aucune carte de credit requise.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button
@@ -543,7 +595,7 @@ export default function LandingPage({ onGoToLogin, onGoToSignup }: LandingPagePr
                     <path d="M18.92 5.01C18.72 4.42 18.16 4 17.5 4h-11c-.66 0-1.21.42-1.42 1.01L3 11v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 15c-.83 0-1.5-.67-1.5-1.5S5.67 12 6.5 12s1.5.67 1.5 1.5S7.33 15 6.5 15zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 10l1.5-4.5h11L19 10H5z" />
                   </svg>
                 </div>
-                <span className="font-bold text-lg">Transport Adapte</span>
+                <span className="font-bold text-lg">Ino-Service</span>
               </div>
               <p className="text-gray-400 text-sm">
                 La solution de gestion financiere pour les chauffeurs de transport adapte au Quebec.
@@ -578,7 +630,7 @@ export default function LandingPage({ onGoToLogin, onGoToSignup }: LandingPagePr
             <p className="text-gray-400 text-sm">
               Developpe avec soin par <span className="font-semibold text-amber-400">Brams AI Agency</span>
             </p>
-            <p className="text-gray-500 text-xs mt-2">&copy; 2025-2026 Transport Adapte. Tous droits reserves.</p>
+            <p className="text-gray-500 text-xs mt-2">&copy; 2025-2026 Ino-Service. Tous droits reserves.</p>
           </div>
         </div>
       </footer>

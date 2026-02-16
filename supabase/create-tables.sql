@@ -1,8 +1,40 @@
+-- ====================================================================
+-- SCHÉMA COMPLET - Ino-Service (Transport Adapté)
+-- Nouveau projet Supabase - Février 2026
+-- Compatible avec Supabase Auth (mot de passe + OTP SMS)
+-- ====================================================================
+-- INSTRUCTIONS :
+-- 1. Allez dans votre dashboard Supabase → SQL Editor
+-- 2. Collez tout ce fichier et exécutez-le
+-- ====================================================================
+
+-- ====================================
+-- Table: users (Profils des chauffeurs)
+-- ====================================
+-- Liée à auth.users via l'ID UUID de Supabase Auth
+CREATE TABLE IF NOT EXISTS users (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email TEXT UNIQUE NOT NULL,
+  name TEXT NOT NULL,
+  phone TEXT,
+  transport_company TEXT,
+  status TEXT DEFAULT 'owner',
+  subscription_tier TEXT DEFAULT 'basic',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow all operations on users" ON users
+  FOR ALL
+  USING (true)
+  WITH CHECK (true);
+
 -- ====================================
 -- Table: tournees (Courses / Tournées)
 -- ====================================
--- Stocke les revenus de courses des chauffeurs
-
 CREATE TABLE IF NOT EXISTS tournees (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id TEXT NOT NULL,
@@ -15,22 +47,19 @@ CREATE TABLE IF NOT EXISTS tournees (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Index pour les requêtes fréquentes
 CREATE INDEX IF NOT EXISTS idx_tournees_user_id ON tournees(user_id);
 CREATE INDEX IF NOT EXISTS idx_tournees_date ON tournees(date DESC);
 CREATE INDEX IF NOT EXISTS idx_tournees_user_date ON tournees(user_id, date DESC);
 
--- RLS (Row Level Security) - Permettre accès avec anon key
 ALTER TABLE tournees ENABLE ROW LEVEL SECURITY;
 
--- Politique: Tous les utilisateurs authentifiés ou anonymes peuvent lire leurs données
 CREATE POLICY "Allow all operations on tournees" ON tournees
   FOR ALL
   USING (true)
   WITH CHECK (true);
 
 -- ====================================
--- Table: revenues (si elle n'existe pas déjà)
+-- Table: revenues (Revenus)
 -- ====================================
 CREATE TABLE IF NOT EXISTS revenues (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -56,7 +85,7 @@ CREATE POLICY "Allow all operations on revenues" ON revenues
   WITH CHECK (true);
 
 -- ====================================
--- Table: expenses (si elle n'existe pas déjà)
+-- Table: expenses (Dépenses)
 -- ====================================
 CREATE TABLE IF NOT EXISTS expenses (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -85,7 +114,7 @@ CREATE POLICY "Allow all operations on expenses" ON expenses
   WITH CHECK (true);
 
 -- ====================================
--- Table: ai_insights (si elle n'existe pas déjà)
+-- Table: ai_insights (Insights IA)
 -- ====================================
 CREATE TABLE IF NOT EXISTS ai_insights (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -109,22 +138,113 @@ CREATE POLICY "Allow all operations on ai_insights" ON ai_insights
   WITH CHECK (true);
 
 -- ====================================
--- Table: users (si elle n'existe pas déjà)
+-- Table: vehicules (Véhicules des chauffeurs)
 -- ====================================
-CREATE TABLE IF NOT EXISTS users (
-  id TEXT PRIMARY KEY,
-  email TEXT UNIQUE NOT NULL,
-  name TEXT NOT NULL,
-  phone TEXT,
-  transport_company TEXT,
-  status TEXT DEFAULT 'owner',
-  subscription_tier TEXT DEFAULT 'basic',
-  created_at TIMESTAMPTZ DEFAULT NOW()
+CREATE TABLE IF NOT EXISTS vehicules (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  nom TEXT NOT NULL,
+  marque TEXT,
+  modele TEXT,
+  annee INTEGER,
+  plaque TEXT,
+  vin TEXT,
+  couleur TEXT,
+  kilometrage_actuel DECIMAL(10,1) DEFAULT 0,
+  date_achat DATE,
+  statut TEXT DEFAULT 'actif',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+CREATE INDEX IF NOT EXISTS idx_vehicules_user_id ON vehicules(user_id);
 
-CREATE POLICY "Allow all operations on users" ON users
+ALTER TABLE vehicules ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow all operations on vehicules" ON vehicules
   FOR ALL
   USING (true)
   WITH CHECK (true);
+
+-- ====================================
+-- Table: entretiens (Entretiens véhicules)
+-- ====================================
+CREATE TABLE IF NOT EXISTS entretiens (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  vehicule_id UUID REFERENCES vehicules(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL,
+  type TEXT NOT NULL,
+  description TEXT,
+  date_effectue DATE,
+  date_prochain DATE,
+  km_effectue DECIMAL(10,1),
+  km_prochain DECIMAL(10,1),
+  cout DECIMAL(10,2) DEFAULT 0,
+  statut TEXT DEFAULT 'planifie',
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_entretiens_vehicule_id ON entretiens(vehicule_id);
+CREATE INDEX IF NOT EXISTS idx_entretiens_user_id ON entretiens(user_id);
+
+ALTER TABLE entretiens ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow all operations on entretiens" ON entretiens
+  FOR ALL
+  USING (true)
+  WITH CHECK (true);
+
+-- ====================================
+-- Table: kilometrage_logs (Suivi kilométrage)
+-- ====================================
+CREATE TABLE IF NOT EXISTS kilometrage_logs (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  vehicule_id UUID REFERENCES vehicules(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL,
+  date DATE NOT NULL DEFAULT CURRENT_DATE,
+  kilometrage DECIMAL(10,1) NOT NULL,
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_km_logs_vehicule_id ON kilometrage_logs(vehicule_id);
+CREATE INDEX IF NOT EXISTS idx_km_logs_date ON kilometrage_logs(date DESC);
+
+ALTER TABLE kilometrage_logs ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow all operations on kilometrage_logs" ON kilometrage_logs
+  FOR ALL
+  USING (true)
+  WITH CHECK (true);
+
+-- ====================================
+-- Table: chat_history (Historique chatbot)
+-- ====================================
+CREATE TABLE IF NOT EXISTS chat_history (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  role TEXT NOT NULL,
+  content TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_chat_history_user_id ON chat_history(user_id);
+
+ALTER TABLE chat_history ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow all operations on chat_history" ON chat_history
+  FOR ALL
+  USING (true)
+  WITH CHECK (true);
+
+-- ====================================
+-- Storage bucket: receipts (Photos de factures)
+-- ====================================
+-- Note: Créez le bucket manuellement dans Supabase → Storage → New Bucket
+-- Nom: receipts | Public: Oui
+
+-- ====================================
+-- FIN DU SCHÉMA
+-- ====================================

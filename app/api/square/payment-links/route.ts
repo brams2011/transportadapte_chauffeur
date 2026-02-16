@@ -52,12 +52,17 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    console.log('[Square] Full response:', JSON.stringify(response, (_, v) => typeof v === 'bigint' ? v.toString() : v, 2));
+
+    const paymentLink = response.result?.paymentLink || response.paymentLink || response;
+    const url = paymentLink?.url || paymentLink?.longUrl || paymentLink?.long_url;
+    const id = paymentLink?.id;
+
+    console.log('[Square] Extracted URL:', url, 'ID:', id);
+
     return NextResponse.json({
       success: true,
-      link: {
-        id: response.result?.paymentLink?.id,
-        url: response.result?.paymentLink?.url || response.result?.paymentLink?.longUrl,
-      },
+      link: { id, url },
     });
   } catch (error) {
     console.error('Error creating payment link:', error);
