@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Transport Adapté Chauffeur',
+  title: 'Transport Adapté et Régulier Chauffeur',
   description: 'Tableau de bord pour chauffeurs de transport adapté',
 };
 

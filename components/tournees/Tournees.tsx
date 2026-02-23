@@ -271,9 +271,10 @@ export default function Tournees({ userId }: TourneesProps) {
 
       {/* Add form modal */}
       {showForm && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md animate-scale-in">
-            <div className="flex items-center justify-between p-5 border-b">
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center sm:p-4">
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-md flex flex-col max-h-[90vh] animate-scale-in">
+            {/* Header fixe */}
+            <div className="flex items-center justify-between p-5 border-b shrink-0">
               <h3 className="text-lg font-bold text-gray-900">Nouvelle tournée</h3>
               <button
                 onClick={() => setShowForm(false)}
@@ -282,127 +283,140 @@ export default function Tournees({ userId }: TourneesProps) {
                 <X className="w-5 h-5 text-gray-500" />
               </button>
             </div>
-            <form onSubmit={handleAdd} className="p-5 space-y-4">
-              {/* Type de transport */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Type de transport</label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setNewTournee({ ...newTournee, transport_type: 'adapte' })}
-                    className={`flex items-center justify-center gap-2 py-2.5 rounded-xl font-semibold text-sm border-2 transition-all ${
-                      newTournee.transport_type === 'adapte'
-                        ? 'border-blue-500 bg-blue-50 text-blue-700'
-                        : 'border-gray-200 bg-gray-50 text-gray-500 hover:border-gray-300'
-                    }`}
+            {/* Contenu scrollable */}
+            <form onSubmit={handleAdd} className="flex flex-col flex-1 min-h-0">
+              <div className="overflow-y-auto flex-1 p-5 space-y-4">
+                {/* Type de transport */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Type de transport</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setNewTournee({ ...newTournee, transport_type: 'adapte' })}
+                      className={`flex items-center justify-center gap-2 py-2.5 rounded-xl font-semibold text-sm border-2 transition-all ${
+                        newTournee.transport_type === 'adapte'
+                          ? 'border-blue-500 bg-blue-50 text-blue-700'
+                          : 'border-gray-200 bg-gray-50 text-gray-500 hover:border-gray-300'
+                      }`}
+                    >
+                      <Bus className="w-4 h-4" />
+                      Transport Adapté
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setNewTournee({ ...newTournee, transport_type: 'regulier' })}
+                      className={`flex items-center justify-center gap-2 py-2.5 rounded-xl font-semibold text-sm border-2 transition-all ${
+                        newTournee.transport_type === 'regulier'
+                          ? 'border-green-500 bg-green-50 text-green-700'
+                          : 'border-gray-200 bg-gray-50 text-gray-500 hover:border-gray-300'
+                      }`}
+                    >
+                      <Car className="w-4 h-4" />
+                      Transport Régulier
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Date</label>
+                  <div className="relative">
+                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      type="date"
+                      value={newTournee.date}
+                      onChange={(e) => setNewTournee({ ...newTournee, date: e.target.value })}
+                      className="w-full pl-11 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Montant ($)</label>
+                  <div className="relative">
+                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={newTournee.montant}
+                      onChange={(e) => setNewTournee({ ...newTournee, montant: e.target.value })}
+                      placeholder="0.00"
+                      className="w-full pl-11 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900"
+                      required
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Heures travaillées</label>
+                  <div className="relative">
+                    <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      type="number"
+                      step="0.5"
+                      min="0"
+                      max="24"
+                      value={newTournee.heures}
+                      onChange={(e) => setNewTournee({ ...newTournee, heures: e.target.value })}
+                      placeholder="Ex: 8"
+                      className="w-full pl-11 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Type</label>
+                  <select
+                    value={newTournee.type}
+                    onChange={(e) => setNewTournee({ ...newTournee, type: e.target.value })}
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900"
                   >
-                    <Bus className="w-4 h-4" />
-                    Transport Adapté
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setNewTournee({ ...newTournee, transport_type: 'regulier' })}
-                    className={`flex items-center justify-center gap-2 py-2.5 rounded-xl font-semibold text-sm border-2 transition-all ${
-                      newTournee.transport_type === 'regulier'
-                        ? 'border-green-500 bg-green-50 text-green-700'
-                        : 'border-gray-200 bg-gray-50 text-gray-500 hover:border-gray-300'
-                    }`}
-                  >
-                    <Car className="w-4 h-4" />
-                    Transport Régulier
-                  </button>
+                    <option>Revenu de tournée</option>
+                    <option>Pourboire</option>
+                    <option>Bonus</option>
+                    <option>Autre revenu</option>
+                  </select>
                 </div>
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Date</label>
-                <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Compagnie (optionnel)</label>
                   <input
-                    type="date"
-                    value={newTournee.date}
-                    onChange={(e) => setNewTournee({ ...newTournee, date: e.target.value })}
-                    className="w-full pl-11 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900"
+                    type="text"
+                    value={newTournee.compagnie}
+                    onChange={(e) => setNewTournee({ ...newTournee, compagnie: e.target.value })}
+                    placeholder="Ex: STM, RTL..."
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Notes (optionnel)</label>
+                  <textarea
+                    value={newTournee.notes}
+                    onChange={(e) => setNewTournee({ ...newTournee, notes: e.target.value })}
+                    placeholder="Notes additionnelles..."
+                    rows={2}
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 resize-none"
                   />
                 </div>
               </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Montant ($)</label>
-                <div className="relative">
-                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={newTournee.montant}
-                    onChange={(e) => setNewTournee({ ...newTournee, montant: e.target.value })}
-                    placeholder="0.00"
-                    className="w-full pl-11 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900"
-                    required
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Heures travaillées</label>
-                <div className="relative">
-                  <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="number"
-                    step="0.5"
-                    min="0"
-                    max="24"
-                    value={newTournee.heures}
-                    onChange={(e) => setNewTournee({ ...newTournee, heures: e.target.value })}
-                    placeholder="Ex: 8"
-                    className="w-full pl-11 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Type</label>
-                <select
-                  value={newTournee.type}
-                  onChange={(e) => setNewTournee({ ...newTournee, type: e.target.value })}
-                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900"
+              {/* Footer fixe avec boutons toujours visibles */}
+              <div className="p-4 border-t shrink-0 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowForm(false)}
+                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-xl font-semibold transition-all active:scale-[0.98]"
                 >
-                  <option>Revenu de tournée</option>
-                  <option>Pourboire</option>
-                  <option>Bonus</option>
-                  <option>Autre revenu</option>
-                </select>
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="flex-1 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white py-3 rounded-xl font-semibold transition-all shadow-lg shadow-purple-600/30 active:scale-[0.98] flex items-center justify-center gap-2"
+                >
+                  {saving ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Enregistrement...
+                    </>
+                  ) : (
+                    'Enregistrer'
+                  )}
+                </button>
               </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Compagnie (optionnel)</label>
-                <input
-                  type="text"
-                  value={newTournee.compagnie}
-                  onChange={(e) => setNewTournee({ ...newTournee, compagnie: e.target.value })}
-                  placeholder="Ex: STM, RTL..."
-                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Notes (optionnel)</label>
-                <textarea
-                  value={newTournee.notes}
-                  onChange={(e) => setNewTournee({ ...newTournee, notes: e.target.value })}
-                  placeholder="Notes additionnelles..."
-                  rows={2}
-                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 resize-none"
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={saving}
-                className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white py-3 rounded-xl font-semibold transition-all shadow-lg shadow-purple-600/30 active:scale-[0.98] flex items-center justify-center gap-2"
-              >
-                {saving ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Enregistrement...
-                  </>
-                ) : (
-                  'Ajouter la tournée'
-                )}
-              </button>
             </form>
           </div>
         </div>
