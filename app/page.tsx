@@ -303,7 +303,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b backdrop-blur-sm bg-white/90">
+      <header className="bg-white shadow-sm border-b backdrop-blur-sm bg-white/90 relative z-20">
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-4">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 md:gap-3">
@@ -409,38 +409,6 @@ export default function Home() {
         {activeTab === 'scan' && (
           <div className="max-w-2xl mx-auto">
             <ReceiptScanner userId={currentUser.id} onSuccess={handleScanSuccess} />
-
-            {/* Instructions */}
-            <div className="mt-8 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6 shadow-sm">
-              <div className="flex items-start gap-3">
-                <div className="bg-blue-100 p-2 rounded-lg">
-                  <Sparkles className="w-5 h-5 text-blue-600" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-blue-900 mb-3">
-                    💡 Conseils pour de meilleurs résultats
-                  </h3>
-                  <ul className="space-y-2 text-sm text-blue-800">
-                    <li className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 bg-blue-600 rounded-full"></span>
-                      Assurez-vous que la facture est bien éclairée
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 bg-blue-600 rounded-full"></span>
-                      Évitez les reflets et les ombres
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 bg-blue-600 rounded-full"></span>
-                      Prenez la photo bien droite (pas en angle)
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 bg-blue-600 rounded-full"></span>
-                      L'IA classifiera automatiquement la dépense
-                    </li>
-                  </ul>
-                </div>
-              </div>
-            </div>
           </div>
         )}
 
@@ -488,20 +456,10 @@ export default function Home() {
               </ul>
             </div>
 
-            {/* Column 3 */}
-            <div>
-              <h3 className="font-semibold text-gray-900 mb-3">Technologies</h3>
-              <div className="flex flex-wrap gap-2">
-                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">Next.js 16</span>
-                <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded">Claude AI</span>
-                <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Supabase</span>
-                <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">TypeScript</span>
-              </div>
-            </div>
           </div>
 
           <div className="border-t pt-6 text-center text-sm text-gray-600">
-            <p>Développé avec ❤️ par <span className="font-semibold text-blue-600">Brams AI Agency</span></p>
+            <p>Développé par <span className="font-semibold text-blue-600">Ino-Service</span></p>
             <p className="mt-1 text-xs text-gray-500">
               © 2025-2026 • Tous droits réservés
             </p>

@@ -6,14 +6,24 @@ export interface OtpEntry {
   sentAt: number;
 }
 
-// Map globale pour stocker les OTPs (clé = numéro de téléphone)
-export const otpStore = new Map<string, OtpEntry>();
+// Déclaration des globaux pour survivre aux rechargements de modules (Next.js dev mode)
+declare global {
+  // eslint-disable-next-line no-var
+  var _otpStore: Map<string, OtpEntry> | undefined;
+  // eslint-disable-next-line no-var
+  var _sendRateLimit: Map<string, number[]> | undefined;
+}
 
-// Rate limiting : envois par téléphone (clé = téléphone, valeur = timestamps)
-export const sendRateLimit = new Map<string, number[]>();
+// Singleton via globalThis : persiste entre les rechargements de modules en dev
+export const otpStore: Map<string, OtpEntry> =
+  globalThis._otpStore ?? (globalThis._otpStore = new Map());
+
+export const sendRateLimit: Map<string, number[]> =
+  globalThis._sendRateLimit ?? (globalThis._sendRateLimit = new Map());
 
 // Nettoyage des entrées expirées toutes les 10 minutes
-if (typeof setInterval !== 'undefined') {
+if (typeof setInterval !== 'undefined' && !globalThis._otpCleanupStarted) {
+  (globalThis as Record<string, unknown>)._otpCleanupStarted = true;
   setInterval(() => {
     const now = Date.now();
     otpStore.forEach((entry, key) => {
