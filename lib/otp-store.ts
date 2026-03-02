@@ -12,6 +12,8 @@ declare global {
   var _otpStore: Map<string, OtpEntry> | undefined;
   // eslint-disable-next-line no-var
   var _sendRateLimit: Map<string, number[]> | undefined;
+  // eslint-disable-next-line no-var
+  var _otpCleanupStarted: boolean | undefined;
 }
 
 // Singleton via globalThis : persiste entre les rechargements de modules en dev
@@ -23,7 +25,7 @@ export const sendRateLimit: Map<string, number[]> =
 
 // Nettoyage des entrées expirées toutes les 10 minutes
 if (typeof setInterval !== 'undefined' && !globalThis._otpCleanupStarted) {
-  (globalThis as Record<string, unknown>)._otpCleanupStarted = true;
+  globalThis._otpCleanupStarted = true;
   setInterval(() => {
     const now = Date.now();
     otpStore.forEach((entry, key) => {
